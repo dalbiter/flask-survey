@@ -30,7 +30,7 @@ def show_question(qid):
     question = satisfaction_survey.questions[qid]
     choices =   question.choices
 
-    return render_template('question.html', question=question, question_num=qid, choices=choices)
+    return render_template('/question.html', question=question, question_num=qid, choices=choices)
 
 @app.route('/answer', methods=['POST'])
 def handle_question():
@@ -38,4 +38,12 @@ def handle_question():
     
     RESPONSES.append(choice)
 
-    return redirect(f'/questions/{len(RESPONSES)}')
+    if len(RESPONSES) == len(satisfaction_survey.questions):
+        return redirect('/complete')
+    else:
+        return redirect(f'/questions/{len(RESPONSES)}')
+    
+@app.route('/complete')
+def show_complete_page():
+
+    return render_template('/complete.html', responses=RESPONSES)
