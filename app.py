@@ -22,7 +22,7 @@ def show_survey():
 @app.route('/start', methods=["POST"])
 def begin_survey():
     """takes user to first question once they start the survey"""
-    
+
     return redirect('/questions/0')
 
 @app.route('/questions/<int:qid>')
@@ -31,6 +31,7 @@ def show_question(qid):
     
     #if the user tries to go to a question out of order
     if len(RESPONSES) != qid:
+        flash(f'Question ID {qid} is invalid!')
         return redirect(f'/questions/{len(RESPONSES)}')
     
     #if a user has answered all of the questions
