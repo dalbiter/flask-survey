@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
 from surveys import satisfaction_survey
 
@@ -8,7 +8,7 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 debug = DebugToolbarExtension(app)
 
-RESPONSES = []
+RESPONSES_KEY = "responses"
 
 @app.route('/')
 def show_survey():
@@ -23,19 +23,27 @@ def show_survey():
 def begin_survey():
     """takes user to first question once they start the survey"""
 
+    #clear the session of responses
+    session[RESPONSES_KEY] = []
+
     return redirect('/questions/0')
 
 @app.route('/questions/<int:qid>')
 def show_question(qid):
     """Show the current question the user is on"""
+    responses = session.get(RESPONSES_KEY)
     
+    # if the user tries to access question too soon
+    if responses is None:
+        return redirect('/')
+   
     #if the user tries to go to a question out of order
-    if len(RESPONSES) != qid:
+    if len(responses) != qid:
         flash(f'Question ID {qid} is invalid!')
-        return redirect(f'/questions/{len(RESPONSES)}')
+        return redirect(f'/questions/{len(responses)}')
     
     #if a user has answered all of the questions
-    if len(RESPONSES) == len(satisfaction_survey.questions):
+    if len(responses) == len(satisfaction_survey.questions):
         return redirect('/complete')
     
     question = satisfaction_survey.questions[qid]
@@ -49,17 +57,20 @@ def handle_question():
 
     choice = request.form.get('answer')
     
-    RESPONSES.append(choice)
+    #add response to the session
+    responses = session[RESPONSES_KEY]
+    responses.append(choice)
+    session[RESPONSES_KEY] = responses
 
     #if a user has completed the survey
-    if len(RESPONSES) == len(satisfaction_survey.questions):
+    if len(responses) == len(satisfaction_survey.questions):
         return redirect('/complete')
     #takew the user to the next question in the survey
     else:
-        return redirect(f'/questions/{len(RESPONSES)}')
+        return redirect(f'/questions/{len(responses)}')
     
 @app.route('/complete')
 def show_complete_page():
     """Shows the completed survey page"""
 
-    return render_template('/complete.html', responses=RESPONSES)
+    return render_template('/complete.html')
